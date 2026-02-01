@@ -13,12 +13,20 @@ consoe.log(HTMLElement.prototype.hasOwnProperty("popover")) // true
 if (!popoverSupported) console.info("This browser doesn't support popover yet. Update your system.")
 const animationSupported = (typeof window !== "undefined" && window?.mmVersion) ? +(window.mmVersion.split(".").join("")) >= 2250 : false
 
+const toISODateId = (d) => {
+  const x = new Date(d);
+  // normalize to local midnight, then format ISO date
+  return new Date(x.getFullYear(), x.getMonth(), x.getDate()).toISOString().slice(0, 10);
+};
+
+
 Module.register("MMM-CalendarExt3", {
   defaults: {
+    
     mode: "week", // or 'month', 'day'
     weekIndex: -1, // Which week from this week starts in a view. Ignored on mode 'month'
     dayIndex: -1,
-    weeksInView: 3, //  How many weeks will be displayed. Ignored on mode 'month'
+    weeksInView: 5, //  How many weeks will be displayed. Ignored on mode 'month'
     instanceId: null,
     firstDayOfWeek: null, // 0: Sunday, 1: Monday
     minimalDaysOfNewYear: null, // When the first week of new year starts in your country.
@@ -42,7 +50,7 @@ Module.register("MMM-CalendarExt3", {
     // It could be possible to use {} like {"4": 6, "5": 5, "6": 4} to set different lines by the number of the week of the month.
     // Also, it could be possible to use [] like [8, 8, 7, 6, 5] to set different lines by the number of week of the month.
     fontSize: "18px",
-    eventHeight: "22px",
+    eventHeight: "20px",
     eventFilter: ev => { return true },
     eventSorter: null,
     eventTransformer: ev => { return ev },
@@ -50,12 +58,46 @@ Module.register("MMM-CalendarExt3", {
     waitFetch: 1000 * 5,
     glanceTime: 1000 * 60, // deprecated, use refreshInterval instead.
     animationSpeed: 2000,
+    allowAddEvent: true,
     useSymbol: true,
     displayLegend: false,
     useWeather: true,
-    weatherLocationName: null,
+    weatherLocationName: "Local",
     // notification: 'CALENDAR_EVENTS', /* reserved */
-    manipulateDateCell: (cellDom, events) => { },
+    manipulateDateCell(cellDom, events) {
+
+      const date = new Date(+cellDom.dataset.date)
+      const dateId = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        .toISOString()
+        .slice(0, 10);
+
+
+      const forecast = this.forecast?.find(f => f.dateId === dateId)
+      if (!forecast) return
+
+      let weather = cellDom.querySelector(".cellWeatherExtra")
+      if (!weather) {
+        weather = document.createElement("div")
+        weather.className = "cellWeatherExtra"
+        cellDom.querySelector(".cellBody")?.append(weather)
+      }
+
+      const rain =
+        forecast.precipitationProbability != null
+          ? `${Math.round(forecast.precipitationProbability)}%`
+          : forecast.precipitationAmount != null
+            ? `${forecast.precipitationAmount}mm`
+            : null
+
+      weather.innerHTML = `
+        <div class="temp">
+          <span class="hi">${Math.round(forecast.maxTemperature)}°</span>
+          <span class="lo">${Math.round(forecast.minTemperature)}°</span>
+        </div>
+        ${rain ? `<div class="rain">☔ ${rain}</div>` : ""}
+      `
+    },
+
     weatherNotification: "WEATHER_UPDATED",
     weatherPayload: payload => { return payload },
     eventNotification: "CALENDAR_EVENTS",
@@ -71,7 +113,7 @@ Module.register("MMM-CalendarExt3", {
     popoverDateOptions: {
       dateStyle: "full"
     },
-    showWeekNumber: true,
+    showWeekNumber: false,
     animateIn: "fadeIn",
     animateOut: "fadeOut",
     skipPassedEventToday: false,
@@ -83,7 +125,7 @@ Module.register("MMM-CalendarExt3", {
     monthIndex: 0,
     referenceDate: null,
     showHeader: true,
-    customHeader: false // true or function
+    customHeader: true // true or function
   },
 
   defaulNotifications: {
@@ -151,6 +193,12 @@ Module.register("MMM-CalendarExt3", {
     options.weeksInView = (options.mode === "month") ? 6 : options.weeksInView
     options.dayIndex = (options.mode === "day") ? options.dayIndex : 0
 
+
+    // Bind functions so `this` inside them refers to the module instance
+    if (typeof options.manipulateDateCell === "function") {
+      options.manipulateDateCell = options.manipulateDateCell.bind(this);
+    }
+
     return options
   },
 
@@ -193,6 +241,22 @@ Module.register("MMM-CalendarExt3", {
     }
   },
 
+  renderAddEventButton(container, date, options) {
+  if (!options || !options.allowAddEvent) return;
+
+  const btn = document.createElement("button");
+  btn.className = "cx3-add-event";
+  btn.textContent = "+ Add event";
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    this.addEventPopover(date, options);
+  };
+
+  const content = container.querySelector(".content");
+  if (content) content.prepend(btn);
+},
+
   preparePopover() {
     if (!popoverSupported) return
     if (document.getElementById("CX3_POPOVER")) return
@@ -204,12 +268,40 @@ Module.register("MMM-CalendarExt3", {
       const popover = document.importNode(template, true)
       popover.id = "CX3_POPOVER"
       document.body.append(popover)
+      popover.addEventListener("click", (e) => {
+      if (e.target.classList.contains("cx3-cancel")) {
+        popover.dataset.mode = "view";
+        popover.hidePopover();
+      }
+
+  if (e.target.classList.contains("cx3-save")) {
+    const form = popover.querySelector(".eventForm");
+    if (!form) return;
+
+    const eventData = {
+      title: form.title.value,
+      date: form.date.value,
+      start: form.start.value,
+      end: form.end.value,
+      location: form.location.value,
+      description: form.description.value
+    };
+
+    popover.dataset.mode = "view";
+    popover.hidePopover();
+
+    this.sendNotification("CX3_ADD_EVENT", eventData);
+  }
+});
+
       popover.ontoggle = ev => {
         if (this.popoverTimer) {
           clearTimeout(this.popoverTimer)
           this.popoverTimer = null
         }
         if (ev.newState === "open") {
+          if (popover.dataset.mode === "form") return;
+          
           this.popoverTimer = setTimeout(() => {
             try {
               popover.hidePopover()
@@ -226,6 +318,31 @@ Module.register("MMM-CalendarExt3", {
       console.error("[CX3]", err)
     })
   },
+
+  addEventPopover(date, options) {
+    const popover = document.getElementById("CX3_POPOVER");
+    if (!popover) return;
+
+    popover.dataset.mode = "form";
+
+    const container = popover.querySelector(".container");
+    container.innerHTML = "";
+
+    const tmpl = popover.querySelector("template#CX3_T_EVENTFORM");
+    if (!tmpl) {
+      console.warn("[CX3] EVENTFORM template not found");
+      return;
+    }
+    const node = tmpl.content.cloneNode(true);
+
+    node.querySelector('[name="date"]').value =
+      new Date(+date).toISOString().slice(0, 10);
+
+    container.append(document.importNode(node, true));
+
+    this.activatePopover(popover);
+  },
+
 
   dayPopover(cDom, events, options) {
     const popover = document.getElementById("CX3_POPOVER")
@@ -262,6 +379,8 @@ Module.register("MMM-CalendarExt3", {
       title.innerHTML = e.title
       list.append(item)
     })
+    this.renderAddEventButton(container, cDom.dataset.date, options);
+    popover.dataset.mode = "view";
 
     this.activatePopover(popover)
   },
@@ -319,6 +438,9 @@ Module.register("MMM-CalendarExt3", {
     popover.showPopover()
   },
 
+
+
+
   notificationReceived(notification, payload, sender) {
     const replyCurrentConfig = ({ callback }) => {
       if (typeof callback === "function") {
@@ -345,6 +467,35 @@ Module.register("MMM-CalendarExt3", {
       observer.observe(moduleContainer, { childList: true })
     }
 
+
+   if (notification === "OPENWEATHER_FORECAST_WEATHER_UPDATE") {
+      if (!payload?.daily) return
+
+      this.forecast = payload.daily.map(d => {
+        const date = new Date(d.dt * 1000)
+        const dateId = date.toISOString().split("T")[0]
+
+        return {
+          dateId,
+          maxTemperature: Math.round(d.temp.max),
+          minTemperature: Math.round(d.temp.min),
+          precipitationProbability: d.pop
+            ? Math.round(d.pop * 100)
+            : 0,
+          precipitationAmount: d.rain
+            ? d.rain
+            : d.snow
+              ? d.snow
+              : 0,
+          weatherType: d.weather?.[0]?.icon ?? "cloudy",
+          locationName: payload.timezone ?? "Local"
+        }
+      })
+
+      this.updateAnimate()
+    }
+
+
     if (notification === this.notifications.weatherNotification) {
       const convertedPayload = this.notifications.weatherPayload(payload)
       if (
@@ -364,6 +515,7 @@ Module.register("MMM-CalendarExt3", {
         }
       }
     }
+    
 
     if (["CX3_GLANCE_CALENDAR", "CX3_MOVE_CALENDAR", "CX3_SET_DATE"].includes(notification)) {
       console.warn("[DEPRECATED]'CX3_GLANCE_CALENDAR' notification was deprecated. Use 'CX3_SET_CONFIG' instead. (README.md)")
@@ -481,9 +633,8 @@ Module.register("MMM-CalendarExt3", {
         h.append(cwDom)
       }
 
-      const forecasted = this.forecast.find(e => {
-        return (tm.toLocaleDateString("en-CA") === e.dateId)
-      })
+      const forecasted = this.forecast.find(e => toISODateId(tm) === e.dateId)
+
 
       if (forecasted && forecasted?.weatherType) {
         const weatherDom = document.createElement("div")
@@ -773,15 +924,17 @@ Module.register("MMM-CalendarExt3", {
         try {
           const locale = options.locale
           const titleOptions = options.headerTitleOptions
-          if (options.mode === "month") {
-            const moment = this.getMoment(options)
+ //         if (options.mode === "month") {
+            const moment = options.referenceDate
+                ? new Date(options.referenceDate)
+                : new Date()
             return new Intl.DateTimeFormat(locale, titleOptions)
               .formatToParts(new Date(moment.valueOf()))
               .reduce((prev, cur, curIndex) => {
                 const result = `${prev}<span class="headerTimeParts ${cur.type} seq_${curIndex} ${cur.source}">${cur.value}</span>`
                 return result
               }, "")
-          } else {
+ /*         } else {
             const begin = new Date(boc.valueOf())
             const end = new Date(eoc.valueOf())
             return new Intl.DateTimeFormat(locale, titleOptions)
@@ -791,6 +944,7 @@ Module.register("MMM-CalendarExt3", {
                 return result
               }, "")
           }
+          */
         } catch (e) {
           Log.error(e)
           return ""

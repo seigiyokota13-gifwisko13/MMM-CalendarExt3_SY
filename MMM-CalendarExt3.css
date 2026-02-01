@@ -6,19 +6,37 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 
 .CX3 {
   /* you CAN modify these values; but SHOULD NOT to remove */
-  --celllinecolor: #333;
-  --cellbgcolor: rgb(0 0 0 / 20%);
-  --cellheaderheight: 25px;
-  --cellfooterheight: 2px;
-  --defaultcolor: #fff;
-  --eventheight: calc(var(--fontsize) + 4px);
-  --displayEndTime: none;
-  --displayWeatherTemp: none;
+  --celllinecolor: rgba(255, 255, 255, 0.25);
+  --cellbgcolor: linear-gradient(
+    180deg,
+    rgb(177 141 177 / 69%),
+    rgb(177 141 177 / 15%)
+    
+  );
+  --cellheaderheight: 32px;
+  --cellfooterheight: 5px;
+  --defaultcolor: #000000ba;
+  --eventheight: calc(var(--fontsize) * 1.2);
+  --displayEndTime: inherit;
+  --displayWeatherTemp: inline-block;
 
   font-size: var(--fontsize);
   color: var(--defaultcolor);
   line-height: calc(var(--eventheight));
 }
+
+.module.MMM-CalendarExt3 .module-header {
+  font-size: 2.6em;
+  font-weight: 2022;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+  height: 30px;
+
+  margin-bottom: .3em;
+  opacity: 0.9;
+}
+
 
 .CX3 * {
   box-sizing: border-box;
@@ -34,12 +52,13 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 
 .CX3 .week {
   width: 100%;
-  padding: 0 5px;
+  padding: 4px;
   height: calc(
     var(--cellheaderheight) + var(--cellfooterheight) +
       calc(var(--eventheight) * var(--maxeventlines))
   );
   position: relative;
+  margin-bottom: 14px;
 }
 
 .CX3 .weekGrid {
@@ -47,6 +66,8 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
   width: 100%;
   grid-template-columns: repeat(7, [cell-start] 1fr [cell-end]);
   grid-auto-columns: 0fr;
+  column-gap: 8px;   /* keep horizontal spacing */
+  
 }
 
 .CX3 .weekGridRow {
@@ -59,6 +80,7 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 }
 
 .CX3 .cellContainer {
+  padding: 4px;
   width: 100%;
   height: calc(
     var(--cellheaderheight) + var(--cellfooterheight) +
@@ -79,12 +101,12 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 }
 
 .CX3 .cell {
-  border: 1px solid var(--celllinecolor);
-  background-color: var(--cellbgcolor);
-  height: calc(
-    var(--cellheaderheight) + var(--cellfooterheight) +
-      calc(var(--eventheight) * var(--maxeventlines))
-  );
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 10px;
+  border: none;
+  background: var(--cellbgcolor);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  padding: 4px;
   position: relative;
 }
 
@@ -110,7 +132,7 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 .CX3 .cellHeader {
   text-align: right;
   height: var(--cellheaderheight);
-  padding: 2px;
+  padding: 5px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -129,7 +151,7 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 
 .CX3 .cw {
   font-size: 80%;
-  color: goldenrod;
+  color: #ff5fa2;
   margin-right: 5px;
 }
 
@@ -147,29 +169,42 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 }
 
 .CX3 .cell.today {
-  border: 1px solid #fff;
+  background: linear-gradient(
+    135deg,
+    #ffd1dc,
+    #ffe6f0
+  );
+  box-shadow: 0 6px 14px rgba(255, 105, 180, 0.35);
 }
 
 .CX3 .today .cellDate {
-  font-weight: bold;
   background-color: white;
-  color: black;
-  border-radius: 8px;
-  padding: 1px 8px;
-  margin: 1px;
-  line-height: 100%;
+  color: #ff5fa2;
+  border-radius: 999px;
+  padding: 2px 10px;
 }
 
 .CX3 .thisMonth {
-  background-color: rgb(255 255 255 / 10%);
+  background-color: rgb(32 0 255 / 10%);
 }
+
+.CX3 .cell:not(.thisMonth) {
+  opacity: 0.55;
+}
+
 
 .CX3 .cellDate .literal {
   margin-right: 3px;
 }
 
+.CX3 .cellDate .day{
+  display: inline-block;
+  margin-right: 5px;
+}
+
 .CX3 .cellDate :not(.day) {
   display: none;
+  margin-right: -1px;
 }
 
 .CX3 .today .cellDate :not(.day) {
@@ -185,19 +220,12 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 }
 
 .CX3 .event {
-  margin: 1px 2px;
-  padding: 0 2px;
-  text-align: left;
-  grid-row: span 1;
-  color: var(--defaultcolor);
-  display: flex;
-  justify-content: flex-start;
-  gap: 2px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  min-width: 0;
-  position: relative;
+  border-radius: 199px;
+  padding: 2px 8px;
+  font-size: 75%;
+  margin-left: 5px;
+  margin-right: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .CX3 .event .headline {
@@ -286,7 +314,7 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
 .CX3 .event.multiday {
   background-color: var(--calendarColor);
   mix-blend-mode: difference;
-  border-radius: 4px;
+  border-radius: 12px;
   color: var(--oppositeColor);
 }
 
@@ -394,6 +422,112 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
   color: dodgerblue;
 }
 
+/* Base fallback */
+.CX3 {
+  --season-a: #ffd1e8;
+  --season-b: #ff9fc7;
+  --season-c: #ffc3dc;
+}
+
+/* 🌷 Spring: Mar–May */
+.CX3.month_3,
+.CX3.month_4,
+.CX3.month_5 {
+  --season-a: #d8f3dc;
+  --season-b: #b7e4c7;
+  --season-c: #95d5b2;
+}
+
+/* ☀️ Summer: Jun–Aug */
+.CX3.month_6,
+.CX3.month_7,
+.CX3.month_8 {
+  --season-a: #fff1b8;
+  --season-b: #ffd166;
+  --season-c: #ffb703;
+}
+
+/* 🍁 Autumn: Sep–Nov */
+.CX3.month_9,
+.CX3.month_10,
+.CX3.month_11 {
+  --season-a: #ffe5c7;
+  --season-b: #ffb703;
+  --season-c: #fb8500;
+}
+
+/* ❄️ Winter: Dec–Feb */
+.CX3.month_12,
+.CX3.month_1,
+.CX3.month_2 {
+  --season-a: #e0f2ff;
+  --season-b: #bde0fe;
+  --season-c: #a2d2ff;
+}
+
+.CX3 .headerTitle {
+  position: relative;
+  z-index: 1;           /* 🔥 survives redraw */
+  display: inline-block;
+  margin: 0.6em auto 0.8em;
+  padding: 0.25em 0.9em;
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff4f9a;
+}
+
+.CX3 .headerTitle::before {
+  content: "";
+  position: absolute;
+  inset: 60% 2% -10% 2%;
+  background: linear-gradient(
+    120deg,
+    var(--season-a),
+    var(--season-b),
+    var(--season-c)
+  );
+  border-radius: 60% 40% 55% 35%;
+  transform: rotate(-2deg);
+  z-index: -1;
+  filter: blur(1px);
+}
+
+
+.CX3 .cellWeatherExtra {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 65%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.CX3 .cellWeatherExtra .temp {
+  display: flex;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.CX3 .cellWeatherExtra .hi {
+  color: #ff6b6b;
+}
+
+.CX3 .cellWeatherExtra .lo {
+  color: #4dabf7;
+}
+
+.CX3 .cellWeatherExtra .rain {
+  font-size: 90%;
+  color: #5f9cff;
+}
+
+
+
 .CX3 .cellHeader .cellDate {
   flex-grow: 3;
 }
@@ -490,6 +624,52 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
   backdrop-filter: blur(5px);
 }
 
+#CX3_POPOVER .eventForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#CX3_POPOVER .eventForm label {
+  display: flex;
+  flex-direction: column;
+  font-size: 75%;
+  font-weight: bold;
+  color: #932bca;
+}
+
+#CX3_POPOVER .eventForm input,
+#CX3_POPOVER .eventForm textarea {
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  font-size: 90%;
+}
+
+#CX3_POPOVER .eventForm .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#CX3_POPOVER .eventForm button {
+  border-radius: 999px;
+  border: none;
+  padding: 6px 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#CX3_POPOVER .eventForm .cx3-save {
+  background: hotpink;
+  color: white;
+}
+
+#CX3_POPOVER .eventForm .cx-cancel {
+  background: #eee;
+}
+
+
 @keyframes slideIn {
   0% {
     opacity: 0;
@@ -512,7 +692,7 @@ selector-pseudo-class-no-unknown, keyframes-name-pattern,
   padding-left: 5px;
   padding-right: 5px;
   color: white;
-  background-color: black;
+  background-color: #932bca;
 }
 
 #CX3_POPOVER .header[data-is-fullday="true"] {
